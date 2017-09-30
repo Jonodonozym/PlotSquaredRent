@@ -1,0 +1,15 @@
+database:
+  URL: "localhost"
+  name: ""
+  username: ""
+  password: "" 
+
+rent:
+  enabled: true
+  rentCost: 100000
+  firstFreeDays: 5
+  checkRentAt: 0500
+  warningPerHour7DaysLeft: 1
+  warningPerHour3DaysLeft: 2
+  warningPerHour1DayLeft: 4
+  maxRentDays: 50

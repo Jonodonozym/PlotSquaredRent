@@ -1,0 +1,20 @@
+main: jdz.PSRent.main.Main
+name: PSRent
+version: 1.0
+author: Jonodonozym
+description: Makes plots from PlotSquared plugin rentable
+depend: [PlotSquared, Vault]
+
+commands:
+  plots rent:
+    description: Pays rent for certain plots
+    usage: |
+      /plots rent list - displays your current rent payments
+      /plots rent pay <plotNumber> <days> - pays rent for a plot for a certain number of days
+      /plots rent payAll <days> - pays rent for all plots for a given number of days
+    permission: plotrent.rent
+      
+permissions:
+  plotrent.rent:
+    description: allows players to pay rent for plots
+    default: false

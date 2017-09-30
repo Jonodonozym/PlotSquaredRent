@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<classpath>
+	<classpathentry kind="src" path="src"/>
+	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
+	<classpathentry kind="lib" path="C:/Users/Jaiden/Downloads/spigot-1.12.jar"/>
+	<classpathentry kind="lib" path="C:/Users/Jaiden/Downloads/Vault.jar"/>
+	<classpathentry kind="lib" path="C:/Users/Jaiden/Downloads/PlotSquared-Bukkit-17.09.29-9480c70-1922.jar"/>
+	<classpathentry kind="output" path="bin"/>
+</classpath>
