@@ -1,4 +1,3 @@
-
 package jdz.PSRent.main;
 
 import java.util.ArrayList;
@@ -51,13 +50,13 @@ public class RentCommandHandler extends SubCommand {
 					try {
 						int plotNumber = Integer.parseInt(args[1]);
 						first = true;
-						if (args.length == 3)
+						if (args.length == 2)
 							player.sendMessage(payRent(player, plotNumber, 1));
 						else
 							player.sendMessage(payRent(player, plotNumber, Integer.parseInt(args[2])));
 					} catch (NumberFormatException e) {
 						player.sendMessage(ChatColor.RED
-								+ Messages.notANumber.replaceAll("\\{n\\}", first ? args[2] : args[1]));
+								+ Messages.notANumber.replace("{n}", first ? args[2] : args[1]));
 					}
 				}
 				break;
@@ -74,12 +73,12 @@ public class RentCommandHandler extends SubCommand {
 						player.sendMessage(payAllRent(player, Integer.parseInt(args[1])));
 					} catch (NumberFormatException e) {
 						player.sendMessage(ChatColor.RED
-								+ Messages.notANumber.replaceAll("\\{n\\}", args[1]));
+								+ Messages.notANumber.replace("{n}", args[1]));
 					}
 				}
 				break;
 			default:
-					player.sendMessage(ChatColor.RED+Messages.notASubCommand.replaceAll("\\{s\\}", args[0]));
+					player.sendMessage(ChatColor.RED+Messages.notASubCommand.replace("{s}", args[0]));
 			}
 
 		return false;
@@ -99,45 +98,57 @@ public class RentCommandHandler extends SubCommand {
 		}
 
 		if (plot == null)
-			return ChatColor.RED + Messages.notAPlotNumber.replaceAll("\\{n\\}", "" + plotNumber);
+			return ChatColor.RED + Messages.notAPlotNumber.replace("{n}", "" + plotNumber);
 
 		int numDaysPaid = SqlPlotRent.getRentDays(player, plotNumber);
+		
+		if (numDaysPaid >= RentConfig.maxDays)
+			return ChatColor.RED+"You have already paid the maximum of "+RentConfig.maxDays+" days in advance!";
+					
+		if (days < 1)
+			days = 1;
+		
 		int totalDaysPaid = days + numDaysPaid;
 		if (totalDaysPaid > RentConfig.maxDays)
 			days = RentConfig.maxDays - numDaysPaid;
-
-		int numMergedPlots = plot.getConnectedPlots().size() + 1;
-		double required = RentConfig.rentCost * numMergedPlots * days;
+		
+		double required = RentConfig.rentCost * days;
 
 		if (Main.economy.has(player, required)) {
 			Main.economy.withdrawPlayer(player, required);
 			SqlPlotRent.setRentDays(player, plotNumber, days + numDaysPaid);
 			FileLogger.log(player.getName() + " paid rent for " + days + " days for plot " + plotNumber);
-			return ChatColor.GREEN + Messages.rentPaid.replaceAll("\\{totalDays\\}", "" + totalDaysPaid)
-					.replaceAll("\\{cost\\}", Main.economy.format(required));
+			return ChatColor.GREEN + Messages.rentPaid
+					.replace("{n}", ""+plotNumber)
+					.replace("{totalDays}", "" + days)
+					.replace("{cost}", Main.economy.format(required));
 		}
 
-		return ChatColor.RED + Messages.notEnoughMoney.replaceAll("\\{cost\\}", Main.economy.format(required))
-				.replaceAll("\\{balance\\}", Main.economy.format(Main.economy.getBalance(player)))
-				.replaceAll("\\{difference\\}", Main.economy.format(required - Main.economy.getBalance(player)));
+		return ChatColor.RED + Messages.notEnoughMoney.replace("{cost}", Main.economy.format(required))
+				.replace("{balance}", Main.economy.format(Main.economy.getBalance(player)))
+				.replace("{difference}", Main.economy.format(required - Main.economy.getBalance(player)));
 	}
 
 	public static String payAllRent(Player player, int days) {
 		if (!SqlApi.isConnected())
 			return ChatColor.RED + "Couldn't connect to the rent database D:";
 
-		int totalCost = 0;
+		if (days < 1)
+			days = 1;
+		
+		double totalCost = 0;
 		int i = 0;
 		List<Integer> plotDays = new ArrayList<Integer>();
 
 		for (Plot plot : new PlotAPI().getPlayerPlots(player)) {
 			int thisPlotDays = days;
 			int numDaysPaid = SqlPlotRent.getRentDays(player, i++);
-			if (days + numDaysPaid > RentConfig.maxDays)
+			
+			int totalDaysPaid = thisPlotDays + numDaysPaid;
+			if (totalDaysPaid > RentConfig.maxDays)
 				thisPlotDays = RentConfig.maxDays - numDaysPaid;
-
-			int numMergedPlots = plot.getConnectedPlots().size() + 1;
-			totalCost += RentConfig.rentCost * numMergedPlots * thisPlotDays;
+			
+			totalCost += RentConfig.rentCost * thisPlotDays;
 			plotDays.add(thisPlotDays + numDaysPaid);
 		}
 
@@ -147,13 +158,13 @@ public class RentCommandHandler extends SubCommand {
 				SqlPlotRent.setRentDays(player, i, plotDays.get(i));
 			FileLogger.log(player.getName() + " paid rent for (up to, if it didn't go over " + RentConfig.maxDays + ") "
 					+ days + " days on all plots");
-			return ChatColor.GREEN + Messages.rentPaidAll.replaceAll("\\{days\\}", "" + days).replaceAll("\\{cost\\}",
+			return ChatColor.GREEN + Messages.rentPaidAll.replace("{days}", "" + days).replace("{cost}",
 					Main.economy.format(totalCost));
 		}
 
-		return ChatColor.RED + Messages.notEnoughMoney.replaceAll("\\{cost\\}", Main.economy.format(totalCost))
-				.replaceAll("\\{balance\\}", Main.economy.format(Main.economy.getBalance(player)))
-				.replaceAll("\\{difference\\}", Main.economy.format(totalCost - Main.economy.getBalance(player)));
+		return ChatColor.RED + Messages.notEnoughMoney.replace("{cost}", Main.economy.format(totalCost))
+				.replace("{balance}", Main.economy.format(Main.economy.getBalance(player)))
+				.replace("{difference}", Main.economy.format(totalCost - Main.economy.getBalance(player)));
 	}
 
 	public static String[] list(Player player) {
@@ -163,10 +174,10 @@ public class RentCommandHandler extends SubCommand {
 		int numPlots = new PlotAPI().getPlayerPlots(player).size();
 		String[] list = new String[numPlots + 2];
 		list[0] = Messages.plotListHeadder;
-		int i = 1;
+		int i = 0;
 		for (Plot plot : new PlotAPI().getPlayerPlots(player)) {
-			list[i] = ChatColor.GREEN + "Plot " + i + ": " + plot.getWorldName() + " , (" + plot.getHome().getX() + ","
-					+ plot.getHome().getZ() + ") " + ChatColor.GOLD + "Days paid: "
+			list[i+1] = ChatColor.GREEN + "Plot " + i + ": " + plot.getWorldName() + " , (" + plot.getCenter().getX() + ","
+					+ plot.getCenter().getZ() + ") " + ChatColor.GOLD + "Days paid: "
 					+ SqlPlotRent.getRentDays(player, i);
 			i++;
 		}

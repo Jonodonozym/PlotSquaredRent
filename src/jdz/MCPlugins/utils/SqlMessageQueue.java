@@ -34,6 +34,12 @@ public class SqlMessageQueue extends SqlApi implements Listener {
 	public static void addQueuedMessage(OfflinePlayer offlinePlayer, String message, int priority) {
 		if (message == "")
 			return;
+		
+		if (offlinePlayer.isOnline()){
+			offlinePlayer.getPlayer().sendMessage(message);
+			return;
+		}
+			
 		if (!checkPreconditions())
 			return;
 

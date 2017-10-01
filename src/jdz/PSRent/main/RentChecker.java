@@ -9,13 +9,17 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 
 import org.bukkit.Bukkit;
+import org.bukkit.OfflinePlayer;
+import org.bukkit.World;
 import org.bukkit.plugin.java.JavaPlugin;
 
+import com.intellectualcrafters.plot.api.PlotAPI;
 import com.intellectualcrafters.plot.object.Location;
 import com.intellectualcrafters.plot.object.Plot;
 
@@ -32,8 +36,7 @@ public class RentChecker extends TimedTask{
 	}
 	
 	public static RentChecker create(){
-		// TODO change to 6000
-		instance = new RentChecker(300, Main.plugin);
+		instance = new RentChecker(6000, Main.plugin);
 		return instance;
 	}
 	
@@ -46,14 +49,27 @@ public class RentChecker extends TimedTask{
 		});
 	}
 
+	@SuppressWarnings("deprecation")
 	private static void subtractRent(){
 		SqlPlotRent.decreaseRentDays();
-		List<Plot> overdue = SqlPlotRent.getOverdueRents();
-		for (Plot plot: overdue){
-			SqlMessageQueue.addQueuedMessage(Bukkit.getOfflinePlayer(plot.getOwners().iterator().next()),
-					Messages.autoUnclaimed.replace("\\{w\\}", plot.getWorldName())
-					.replace("\\{x\\}", ""+plot.getCenter().getX())
-					.replace("\\{z\\}", ""+plot.getCenter().getZ()));
+		List<String[]> overdue = SqlPlotRent.getOverdueRents();
+		
+		for (int i=0; i<overdue.size(); i++){
+			World world = Bukkit.getWorld(overdue.get(i)[1]);
+			int x = Integer.parseInt(overdue.get(i)[2]);
+			int y = Integer.parseInt(overdue.get(i)[3]);
+			Plot plot = new PlotAPI().getPlot(world, x, y);
+			OfflinePlayer player = Bukkit.getOfflinePlayer(overdue.get(i)[0]);
+			if (player != null){
+				SqlMessageQueue.addQueuedMessage(player,
+						Messages.autoUnclaimed.replace("{w}", plot.getWorldName())
+						.replace("{x}", ""+plot.getCenter().getX())
+						.replace("{z}", ""+plot.getCenter().getZ()));
+			}
+			plot.unlink();
+			plot.unclaim();
+			plot.clear(()->{});
+			SqlPlotRent.removeEntry(plot);
 		}
 	}
 	
@@ -89,23 +105,17 @@ public class RentChecker extends TimedTask{
 	}
 	
 	
-	//@SuppressWarnings("deprecation")
+	@SuppressWarnings("deprecation")
 	private static Date getNextCheck(Date date, int hours, int minutes){
 		Calendar c = Calendar.getInstance();
 		c.setTime(date);
 		
-		//TODO remove
-		c.add(Calendar.SECOND, 15);
-		return c.getTime();
-		
-		/*
 		if (date.getHours() > hours || date.getHours() == hours && date.getMinutes() > minutes)
 			c.add(Calendar.DATE, 1);
 		Date nextDate = c.getTime();
 		nextDate.setHours(hours);
 		nextDate.setMinutes(minutes);
-		return date;
-		*/
+		return nextDate;
 	}
 	
 	public static void main(String[] args){

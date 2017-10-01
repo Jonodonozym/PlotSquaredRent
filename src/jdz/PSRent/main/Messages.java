@@ -48,7 +48,7 @@ public class Messages {
 		plotListFooter = colorize(config.getString("messages.plotListFooter"));
 		help = config.getStringList("messages.help");
 		for (int i=0; i<help.size(); i++)
-			help.set(i, colorize(help.get(i).replaceAll("\\{rent\\}", Main.economy.format(RentConfig.rentCost))));
+			help.set(i, colorize(help.get(i).replace("{rent}", Main.economy.format(RentConfig.rentCost))));
 		
 		
 	}
