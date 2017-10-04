@@ -75,7 +75,7 @@ public class SqlMessageQueue extends SqlApi implements Listener {
 			return new ArrayList<String>();
 
 		String query = "SELECT message FROM " + MessageQueueTable + " WHERE player = '" + offlinePlayer.getName() + "' "
-				+ "ORDER BY priotiry asc;";
+				+ "ORDER BY priority asc;";
 		List<String[]> list = fetchRows(query);
 		List<String> returnList = new ArrayList<String>();
 		for (String[] str : list)

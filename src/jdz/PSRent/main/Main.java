@@ -5,9 +5,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
-import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
-import org.bukkit.event.player.PlayerCommandPreprocessEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitRunnable;
@@ -16,8 +14,6 @@ import com.intellectualcrafters.plot.api.PlotAPI;
 import com.intellectualcrafters.plot.object.Plot;
 import com.plotsquared.bukkit.events.PlayerClaimPlotEvent;
 import com.plotsquared.bukkit.events.PlotClearEvent;
-import com.plotsquared.bukkit.events.PlotDeleteEvent;
-
 import jdz.MCPlugins.utils.Config;
 import jdz.MCPlugins.utils.FileLogger;
 import jdz.MCPlugins.utils.SqlApi;
