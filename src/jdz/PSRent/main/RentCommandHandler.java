@@ -106,7 +106,7 @@ public class RentCommandHandler extends SubCommand {
 		if (totalDaysPaid > RentConfig.maxDays)
 			days = RentConfig.maxDays - numDaysPaid;
 
-		double required = RentConfig.rentCost * days * plot.getConnectedPlots().size();
+		double required = RentConfig.rentCost * days;
 
 		if (Vault.getEconomy().has(player, required)) {
 			Vault.getEconomy().withdrawPlayer(player, required);
@@ -133,23 +133,19 @@ public class RentCommandHandler extends SubCommand {
 
 		int i = 0;
 
-		Set<Plot> ignorePlots = new HashSet<Plot>();
-		for (Plot plot : SqlPlotRent.getPlots(player))
-			if (!ignorePlots.contains(plot)) {
-				int thisPlotDays = days;
-				int numDaysPaid = SqlPlotRent.getRentDays(player, i);
+		for (Plot plot : SqlPlotRent.getPlots(player)) {
+			int thisPlotDays = days;
+			int numDaysPaid = SqlPlotRent.getRentDays(player, i);
 
-				int totalDaysPaid = thisPlotDays + numDaysPaid;
-				if (totalDaysPaid > RentConfig.maxDays)
-					thisPlotDays = RentConfig.maxDays - numDaysPaid;
+			int totalDaysPaid = thisPlotDays + numDaysPaid;
+			if (totalDaysPaid > RentConfig.maxDays)
+				thisPlotDays = RentConfig.maxDays - numDaysPaid;
 
-				totalCost += RentConfig.rentCost * thisPlotDays * plot.getConnectedPlots().size();
-				plotDays.add(thisPlotDays + numDaysPaid);
+			totalCost += RentConfig.rentCost * thisPlotDays;
+			plotDays.add(thisPlotDays + numDaysPaid);
 
-				ignorePlots.addAll(plot.getConnectedPlots());
-
-				i++;
-			}
+			i++;
+		}
 
 		if (Vault.getEconomy().has(player, totalCost)) {
 			Vault.getEconomy().withdrawPlayer(player, totalCost);
