@@ -12,35 +12,25 @@ import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
+import java.util.Set;
 
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.World;
-import org.bukkit.plugin.java.JavaPlugin;
 
 import com.intellectualcrafters.plot.api.PlotAPI;
 import com.intellectualcrafters.plot.object.Location;
 import com.intellectualcrafters.plot.object.Plot;
 
-import jdz.MCPlugins.utils.SqlMessageQueue;
-import jdz.MCPlugins.utils.TimedTask;
+import jdz.BukkitJUtils.utils.FileLogger;
+import jdz.BukkitJUtils.utils.SqlMessageQueue;
+import jdz.BukkitJUtils.utils.TimedTask;
 
-public class RentChecker extends TimedTask{
+public class RentChecker{
 	private static SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 	private static Date nextCheck = getNextCheck(new Date(), RentConfig.checkHours, RentConfig.checkMinutes);
-	private static RentChecker instance = null;
-	
-	public static RentChecker getInstance(){
-		return instance;
-	}
-	
-	public static RentChecker create(){
-		instance = new RentChecker(6000, Main.plugin);
-		return instance;
-	}
-	
-	private RentChecker(int time, JavaPlugin plugin) {
-		super(time, plugin, ()->{
+	static{
+			new TimedTask(6000, ()->{
 			if (new Date().after(nextCheck)){
 				subtractRent();
 				setLastCheck(new Date());
@@ -51,6 +41,7 @@ public class RentChecker extends TimedTask{
 	@SuppressWarnings("deprecation")
 	private static void subtractRent(){
 		SqlPlotRent.decreaseRentDays();
+		
 		List<String[]> overdue = SqlPlotRent.getOverdueRents();
 		
 		for (int i=0; i<overdue.size(); i++){
@@ -64,10 +55,13 @@ public class RentChecker extends TimedTask{
 						Messages.autoUnclaimed.replace("{w}", plot.getWorldName())
 						.replace("{x}", ""+plot.getCenter().getX())
 						.replace("{z}", ""+plot.getCenter().getZ()));
+				FileLogger.log(player.getName()+"'s plot at "+x+","+y+" rent payments went overdue, so it was unclaimed.");
 			}
+			
 			plot.unlink();
 			plot.unclaim();
 			plot.clear(()->{});
+			
 			SqlPlotRent.removeEntry(plot);
 		}
 	}

@@ -2,7 +2,7 @@ package jdz.PSRent.main;
 
 import org.bukkit.configuration.file.FileConfiguration;
 
-import jdz.MCPlugins.utils.FileLogger;
+import jdz.BukkitJUtils.utils.FileLogger;
 
 public class RentConfig{
 	

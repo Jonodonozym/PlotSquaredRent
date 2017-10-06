@@ -1,5 +1,15 @@
-package jdz.MCPlugins.utils;
+/**
+ * SqlApi.java
+ *
+ * Created by Jonodonozym on god knows when
+ * Copyright © 2017. All rights reserved.
+ * 
+ * Last modified on Oct 5, 2017 9:22:58 PM
+ */
 
+package jdz.BukkitJUtils.utils;
+
+import java.io.IOException;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
@@ -11,7 +21,6 @@ import java.util.concurrent.Executors;
 import java.util.logging.Logger;
 
 import org.bukkit.configuration.file.FileConfiguration;
-import org.bukkit.plugin.java.JavaPlugin;
 
 
 /**
@@ -19,7 +28,7 @@ import org.bukkit.plugin.java.JavaPlugin;
  * 
  * @author Jonodonozym
  */
-public class SqlApi {
+public final class SqlApi {
 	private static String dbURL = "";
 	private static String dbName = "";
 	private static String dbUsername = "";
@@ -27,26 +36,15 @@ public class SqlApi {
 	private static int dbReconnectTime = 1200;
 	
 	private static final String driver = "com.mysql.jdbc.Driver";
-	
 	private static TimedTask autoReconnectTask = null;
-	
 	private static Connection dbConnection = null;
+	private static List<Runnable> connectHooks = new ArrayList<Runnable>();
 	
-	private static ConnectHook connectHook = null;
-	
-	private static JavaPlugin main = null;
-	
-	public interface ConnectHook{
-		public void run();
+	public static void runOnConnect(Runnable r){
+		connectHooks.add(r);
 	}
 	
-	public static void addConnectHook(ConnectHook hook){
-		connectHook = hook;
-	}
-	
-	public static boolean reloadConfig(FileConfiguration config, JavaPlugin plugin){
-		main = plugin;
-		
+	public static boolean reloadConfig(FileConfiguration config){
 		dbURL = config.getString("database.URL");
 		dbName = config.getString("database.name");
 		dbUsername = config.getString("database.username");
@@ -55,12 +53,34 @@ public class SqlApi {
 		dbReconnectTime = dbReconnectTime<=0?1200:dbReconnectTime;
 		
 		if (dbURL.equals("") || dbName.equals("") || dbUsername.equals("") || dbPassword.equals("")) {
-			main.getLogger().info(
+			BukkitJUtils.plugin.getLogger().info(
 					"Some of the database lines in config.yml are empty, please fill in the config.yml and reload the plugin.");
+
+			if (!config.contains("database.URL"))
+				config.addDefault("database.URL", "");
+			
+			if (!config.contains("database.name"))
+				config.addDefault("database.name", "");
+			
+			if (!config.contains("database.username"))
+				config.addDefault("database.username", "");
+			
+			if (!config.contains("database.password"))
+				config.addDefault("database.password", "");
+			
+			if (!config.contains("database.autoReconnectSeconds"))
+				config.addDefault("database.autoReconnectSeconds", 60);
+			
+			try {
+				config.save(Config.getConfigFile());
+			} catch (IOException e) {
+				FileLogger.createErrorLog(e, "This error occurred in the BukkitJUtils");
+			}
+			
 			return false;
 		} 
 		
-		return (open(plugin.getLogger()) != null);
+		return (open(BukkitJUtils.plugin.getLogger()) != null);
 	}
 
 	/**
@@ -91,9 +111,8 @@ public class SqlApi {
 
 			SqlApi.dbConnection = dbConnection;
 			
-			if (connectHook != null)
-				connectHook.run();
-			connectHook = null;
+			for (Runnable r: connectHooks)
+				r.run();
 			
 			return dbConnection;
 		}
@@ -138,11 +157,11 @@ public class SqlApi {
 			return false;
 		
 		if (autoReconnectTask == null){
-			autoReconnectTask = new TimedTask(dbReconnectTime, main, ()->{
+			autoReconnectTask = new TimedTask(dbReconnectTime, ()->{
 				Connection con = SqlApi.open(null);
 				if (con !=null)
 				{
-					main.getLogger().info("Successfully re-connected to the database");
+					BukkitJUtils.plugin.getLogger().info("Successfully re-connected to the database");
 					dbConnection = con;
 					if(autoReconnectTask != null)
 						autoReconnectTask.stop();
@@ -161,11 +180,13 @@ public class SqlApi {
 	 * @param query
 	 * @return
 	 */
-	protected static List<String[]> fetchRows(String query) {
+	public static List<String[]> getRows(String query) {
 		List<String[]> rows = new ArrayList<String[]>();
 
-		if (!isConnected())
+		if (!isConnected()){
+			autoReconnect();
 			return rows;
+		}
 		
 		Statement stmt = null;
 		try {
@@ -193,10 +214,12 @@ public class SqlApi {
 		return rows;
 	}
 
-	protected static List<String> fetchColumns(String table) {
+	public static List<String> getColumns(String table) {
 		List<String> columns = new ArrayList<String>();
-		if (!isConnected())
+		if (!isConnected()){
+			autoReconnect();
 			return columns;
+		}
 		
 		String query = "SHOW columns FROM " + table + ";";
 		Statement stmt = null;
@@ -225,9 +248,11 @@ public class SqlApi {
 	 * @param connection
 	 * @param update
 	 */
-	protected static void executeUpdate(String update) {
-		if (!isConnected())
+	public static void executeUpdate(String update) {
+		if (!isConnected()){
+			autoReconnect();
 			return;
+		}
 		
 		Statement stmt = null;
 		try {
@@ -250,22 +275,20 @@ public class SqlApi {
 	 * Checks to see if the database has a table
 	 * 
 	 * @param connection
-	 * @param Table
+	 * @param tableName
 	 * @return
 	 */
-	protected static boolean hasTable(String Table) {
+	public static boolean hasTable(String tableName) {
 		if (!isConnected())
 			return false;
 		
-		boolean returnValue = false;
-		String query = "SHOW TABLES LIKE '" + Table + "';";
+		String query = "SHOW TABLES LIKE '" + tableName + "';";
 		Statement stmt = null;
 		try {
 			stmt = dbConnection.createStatement();
 			ResultSet rs = stmt.executeQuery(query);
-			while (rs.next()) {
-				returnValue = true;
-			}
+			while (rs.next())
+				return true;
 		} catch (SQLException e) {
 			FileLogger.createErrorLog(e);
 		} finally {
@@ -277,6 +300,83 @@ public class SqlApi {
 				}
 			}
 		}
-		return returnValue;
+		return false;
+	}
+	
+	/**
+	 * Creates a new table, if it doesn't already exist
+	 * @param tableName
+	 * @param columns
+	 */
+	public static void addTable(String tableName, SqlColumn... columns){
+	    String update = "CREATE TABLE IF NOT EXISTS"+tableName+" (";
+	    for(SqlColumn c: columns)
+	    	update += c.name()+" "+c.type().getSqlSyntax()+",";
+	    if (update.contains(","))
+	    	update.substring(0, update.length()-1);
+	    update += ");";
+	    
+	    executeUpdate(update);
+	}
+	
+	public static void removeTable(String tableName){
+		String update = "DROP TABLE IF EXISTS '"+tableName+"';";
+		executeUpdate(update);
+	}
+
+	/**
+	 * Adds a single column to the table, if it doesn't exist
+	 * @param tableName
+	 * @param column
+	 */
+	public static void addColumn(String tableName, SqlColumn column){
+		addColumns(tableName, column);
+	}
+	
+	/**
+	 * Adds multiple columns to the table, if they don't exist
+	 * @param tableName
+	 * @param columns
+	 */
+	public static void addColumns(String tableName, SqlColumn...columns){
+		String update = "ALTER TABLE "+tableName+" ";
+		List<String> existingColumns = getColumns(tableName);
+		for (SqlColumn c: columns)
+			if (!existingColumns.contains(c.name()))
+				update += "ADD COLUMN '"+c.name()+"' "+c.type().getSqlSyntax()+" NOT NULL, ";
+			
+		if (update.contains(",")){
+			update = update.substring(0, update.length()-2);
+			update += ";";
+			executeUpdate(update);
+		}
+	}
+	
+	/**
+	 * drops a column from a table
+	 * @param tableName
+	 * @param columnName
+	 */
+	public static void removeColumn(String tableName, String columnName){
+		removeColumns(tableName, columnName);
+	}
+	
+	/**
+	 * drops multiple columns from a table
+	 * @param tableName
+	 * @param columnNames
+	 */
+	public static void removeColumns(String tableName, String...columnNames){
+		String update = "ALTER TABLE "+tableName+" ";
+		List<String> existingColumns = getColumns(tableName);
+		for (String c: columnNames)
+			if (!existingColumns.contains(c))
+				update += "DROP COLUMN "+c+", ";
+
+		if (update.contains(",")){
+			update = update.substring(0, update.length()-2);
+			update += ";";
+			executeUpdate(update);
+		}
 	}
 }

@@ -1,30 +1,54 @@
+/**
+ * SqlMessageQueue.java
+ *
+ * Created by Jonodonozym on god knows when
+ * Copyright © 2017. All rights reserved.
+ * 
+ * Last modified on Oct 5, 2017 9:22:58 PM
+ */
 
-package jdz.MCPlugins.utils;
+package jdz.BukkitJUtils.utils;
 
 import java.util.ArrayList;
 import java.util.List;
 
+import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerJoinEvent;
 
-public class SqlMessageQueue extends SqlApi implements Listener {
+/**
+ * Allows you to queue messages for players who may or may not be online
+ * Requires an sql database, hence the SqlApi stuff and then you must call init()
+ * 
+ * if they're online, sends them the message. Otherwise, sends them the message
+ * the next time they log-on
+ *
+ * @author Jonodonozym
+ */
+public final class SqlMessageQueue implements Listener {
 	private static String MessageQueueTable = null;
 
+	public static void init(){
+		Bukkit.getServer().getPluginManager().registerEvents(new SqlMessageQueue(), BukkitJUtils.plugin);
+		if (MessageQueueTable == null)
+			MessageQueueTable = BukkitJUtils.plugin.getName()+"_MessageQueue";
+	}
+	
 	public static void setTable(String table) {
 		SqlMessageQueue.MessageQueueTable = table;
 		ensureCorrectTables();
 	}
 
-	public static void ensureCorrectTables() {
+	private static void ensureCorrectTables() {
 		if (!checkPreconditions())
 			return;
 
 		String update = "CREATE TABLE IF NOT EXISTS " + MessageQueueTable
 				+ " (player varchar(63), message varchar(1023), priority int);";
-		executeUpdate(update);
+		SqlApi.executeUpdate(update);
 	}
 
 	public static void addQueuedMessage(OfflinePlayer offlinePlayer, String message) {
@@ -45,7 +69,7 @@ public class SqlMessageQueue extends SqlApi implements Listener {
 
 		String update = "INSERT INTO " + MessageQueueTable + " (player, message, priority) VALUES(," + offlinePlayer.getName()
 				+ "','" + message + "'," + priority + ");";
-		executeUpdate(update);
+		SqlApi.executeUpdate(update);
 	}
 
 	public static void setQueuedMessages(OfflinePlayer offlinePlayer, List<String> messages) {
@@ -58,7 +82,7 @@ public class SqlMessageQueue extends SqlApi implements Listener {
 		for (String s : messages){
 			if (s == "")
 				continue;
-			executeUpdate(update.replace("\\{m\\}", s).replace("\\{p\\}", "" + i++));
+			SqlApi.executeUpdate(update.replace("\\{m\\}", s).replace("\\{p\\}", "" + i++));
 		}
 	}
 
@@ -67,7 +91,7 @@ public class SqlMessageQueue extends SqlApi implements Listener {
 			return;
 
 		String update = "DELETE FROM " + MessageQueueTable + " WHERE player = '" + offlinePlayer.getName() + ";";
-		executeUpdate(update);
+		SqlApi.executeUpdate(update);
 	}
 
 	public static List<String> getQueuedMessages(OfflinePlayer offlinePlayer) {
@@ -76,7 +100,7 @@ public class SqlMessageQueue extends SqlApi implements Listener {
 
 		String query = "SELECT message FROM " + MessageQueueTable + " WHERE player = '" + offlinePlayer.getName() + "' "
 				+ "ORDER BY priority asc;";
-		List<String[]> list = fetchRows(query);
+		List<String[]> list = SqlApi.getRows(query);
 		List<String> returnList = new ArrayList<String>();
 		for (String[] str : list)
 			returnList.add(str[0]);
@@ -88,7 +112,7 @@ public class SqlMessageQueue extends SqlApi implements Listener {
 			return 1000;
 		String query = "SELECT MAX(priority) FROM " + MessageQueueTable + " WHERE player = '" + offlinePlayer.getName() + "';";
 		try {
-			return Integer.parseInt(fetchRows(query).get(0)[0]);
+			return Integer.parseInt(SqlApi.getRows(query).get(0)[0]);
 		} catch (Exception e) {
 			return 1000;
 		}
@@ -96,9 +120,9 @@ public class SqlMessageQueue extends SqlApi implements Listener {
 
 	private static boolean checkPreconditions() {
 		if (MessageQueueTable == null)
-			throw new RuntimeException("message queue table must be set first");
+			throw new RuntimeException("Must call MessageQueue.init() in this plugin's code somewhere, preferably before calling any MessageQueue methods");
 
-		if (autoReconnect())
+		if (SqlApi.autoReconnect())
 			return false;
 		return true;
 	}

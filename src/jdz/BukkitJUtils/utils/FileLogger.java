@@ -1,4 +1,13 @@
-package jdz.MCPlugins.utils;
+/**
+ * FileLogger.java
+ *
+ * Created by Jonodonozym on god knows when
+ * Copyright © 2017. All rights reserved.
+ * 
+ * Last modified on Oct 5, 2017 9:22:58 PM
+ */
+
+package jdz.BukkitJUtils.utils;
 
 import java.io.BufferedWriter;
 import java.io.File;
@@ -9,18 +18,21 @@ import java.io.StringWriter;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
-import org.bukkit.plugin.java.JavaPlugin;
-
-import jdz.PSRent.main.Main;
-
-public class FileLogger {
+/**
+ * Lets you log plugin messages in a file
+ * Also lets you log errors in the file instead of displaying a big ugly message on the console
+ *
+ * @author Jonodonozym
+ */
+public final class FileLogger {
 	private static BufferedWriter defaultLogWriter = null;
-	private static String directory = null;
 	
-	public static void init(JavaPlugin plugin){
-		directory = plugin.getDataFolder()+File.separator+"Logs";
-	}
-	
+	/**
+	 * Starts a new log file
+	 * 
+	 * you probably never need to do this, I just use it for a few methods myself and thought I should share.
+	 * Aren't I a wonderful developer?
+	 */
 	private static void startNewLog(){
 		try{
 			if (defaultLogWriter != null)
@@ -33,11 +45,16 @@ public class FileLogger {
 			
 			defaultLogWriter = new BufferedWriter(new FileWriter(file));
 		}
-		catch(IOException e){
-			e.printStackTrace();
+		catch(IOException exception){
+			exception.printStackTrace();
 		}
 	}
 	
+	/**
+	 * Logs a message to the current log file
+	 * creates a new log file if one isn't already in use
+	 * @param message
+	 */
 	public static void log(String message){
 		try{
 			if (defaultLogWriter == null)
@@ -45,24 +62,19 @@ public class FileLogger {
 			defaultLogWriter.write(getTimestampShort()+": "+message);
 			defaultLogWriter.newLine();
 		}
-		catch(IOException e){
-			e.printStackTrace();
+		catch(IOException exception){
+			exception.printStackTrace();
 		}
 	}
 	
-	public static void logNew(String message){
-		startNewLog();
-		log(message);
-	}
-	
 	/**
-	 * Writes an error log to a file, given an exception and extra data
+	 * Writes an exception's stack trace to an error log file, given an exception and extra information you might want to tack on to help debugging
 	 * 
-	 * @param e
+	 * @param exception
 	 */
-	public static void createErrorLog(Exception e, String... extraData) {
+	public static void createErrorLog(Exception exception, String... extraData) {
 		PrintWriter pw = new PrintWriter(new StringWriter());
-		e.printStackTrace(pw);
+		exception.printStackTrace(pw);
 		pw.println();
 		pw.println("Extra data:");
 		for (String s : extraData)
@@ -72,24 +84,24 @@ public class FileLogger {
 	}
 
 	/**
-	 * Writes an error log to a file, given an exception
+	 * Writes an exception's stack trace to an error log file, given an exception
 	 * 
-	 * @param e
+	 * @param exception
 	 */
-	public static void createErrorLog(Exception e) {
+	public static void createErrorLog(Exception exception) {
 		StringWriter sw = new StringWriter();
-		e.printStackTrace(new PrintWriter(sw));
+		exception.printStackTrace(new PrintWriter(sw));
 		String exceptionAsString = "\n"+sw.toString();
 		createErrorLog(exceptionAsString);
 	}
 
 	/**
-	 * Writes an message to an error log file
+	 * Writes an error message to an error log file
 	 * 
-	 * @param e
+	 * @param exception
 	 */
-	public static void createErrorLog(String s) {
-		Main.plugin.getLogger().info("An error occurred. Check the Error log file for details.");
+	public static void createErrorLog(String error) {
+		BukkitJUtils.plugin.getLogger().info("An error occurred. Check the Error log file for details.");
 		String fileDir = getLogsDirectory() + File.separator + "Errors" + File.separator+"Error "
 				+ getTimestamp() + ".txt";
 		
@@ -98,11 +110,11 @@ public class FileLogger {
 		
 		File file = new File(fileDir);
 		
-		writeFile("An error occurred in the plugin. If you can't work out the issue from this file, send this file to the plugin developer with a description of the failure.\n\n"+s,file);
+		writeFile("An error occurred in the plugin. If you can't work out the issue from this file, send this file to the plugin developer with a description of the failure",error,file);
 	}
 	
 	private static String getLogsDirectory(){
-		return directory;
+		return BukkitJUtils.plugin.getDataFolder()+File.separator+"Logs";
 	}
 	
 	private static void createDefaultDirectory(String directory){
@@ -119,15 +131,20 @@ public class FileLogger {
 		return "["+new SimpleDateFormat("HH-mm-ss").format(new Date())+"]";
 	}
 	
-	private static void writeFile(String s, File file){
+	private static void writeFile(String header, String contents, File file){
 		try {
 			if (!file.exists())
 				file.createNewFile();
 			BufferedWriter bfw = new BufferedWriter(new FileWriter(file));
-			bfw.write(s);
+			if (header != ""){
+				bfw.write(header);
+				bfw.newLine();
+				bfw.newLine();
+			}
+			bfw.write(contents);
 			bfw.close();
-		} catch (IOException e) {
-			e.printStackTrace();
+		} catch (IOException exception) {
+			exception.printStackTrace();
 		}
 	}
 
