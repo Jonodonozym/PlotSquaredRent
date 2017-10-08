@@ -3,6 +3,7 @@ package jdz.PSRent.main;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 
 import org.bukkit.Bukkit;
@@ -58,7 +59,7 @@ public class SqlPlotRent {
 		String result = SqlApi.getRows(query).get(0)[0];
 		int plotNumber = 0;
 		try { plotNumber = Integer.parseInt(result) + 1; }
-		catch (NumberFormatException e) { }
+		catch (Exception e) { }
 
 		String update = "INSERT INTO " + table + " (player, plotNumber, daysPaid, world, x, y)" + " VALUES('"
 				+ player.getName() + "'," + plotNumber + "," + RentConfig.freeDays + ",'" + plot.getWorldName()
@@ -74,7 +75,9 @@ public class SqlPlotRent {
 		String query = "SELECT plotNumber FROM "+table+" WHERE world = '"+world+"' AND x = '"+x+"' AND y = '"+y+"';";
 		List<String[]> result = SqlApi.getRows(query);
 		
-		int plotNumber = Integer.parseInt(result.get(0)[0]);
+		int plotNumber = 0;
+		try{ plotNumber = Integer.parseInt(result.get(0)[0]); }
+		catch (Exception e) {}
 		
 		String update = "DELETE FROM " + table + " WHERE world = '"+world+"' AND x = '"+x+"' AND y = '"+y+"';";
 		SqlApi.executeUpdate(update);
@@ -139,5 +142,31 @@ public class SqlPlotRent {
 	public static void purgeOverdue(){
 		String update = "DELETE FROM "+table+" WHERE daysPaid <= 0";
 		SqlApi.executeUpdate(update);
+	}
+	
+	public static void fixData(){
+		String query = "SELECT player, plotNumber, world, x, y FROM "+table+" ORDER BY plotNumber asc;";
+		List<String[]> rows = SqlApi.getRows(query);
+		
+		HashMap<String, List<String[]>> playerToRow = new HashMap<String, List<String[]>>();
+		
+		for (String[] row: rows){
+			String player = row[0];
+			if (!playerToRow.containsKey(player))
+				playerToRow.put(player, new ArrayList<String[]>());
+			playerToRow.get(player).add(row);
+		}
+		
+		for (List<String[]> list: playerToRow.values()){
+			int i=0;
+			for (String[] args: list){
+				int plotNumber = Integer.parseInt(args[1]);
+				if (plotNumber != i){
+					String update = "UPDATE " + table +" SET plotNumber = "+i+" WHERE world = '"+args[2]+"' AND x = '"+args[3]+"' AND y = '"+args[4]+"';";
+					SqlApi.executeUpdate(update);
+				}
+				i++;
+			}
+		}
 	}
 }

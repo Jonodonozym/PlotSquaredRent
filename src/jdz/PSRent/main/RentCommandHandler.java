@@ -1,9 +1,7 @@
 package jdz.PSRent.main;
 
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
@@ -131,9 +129,7 @@ public class RentCommandHandler extends SubCommand {
 		double totalCost = 0;
 		List<Integer> plotDays = new ArrayList<Integer>();
 
-		int i = 0;
-
-		for (Plot plot : SqlPlotRent.getPlots(player)) {
+		for (int i=0; i< SqlPlotRent.getPlots(player).size(); i++) {
 			int thisPlotDays = days;
 			int numDaysPaid = SqlPlotRent.getRentDays(player, i);
 
@@ -143,13 +139,11 @@ public class RentCommandHandler extends SubCommand {
 
 			totalCost += RentConfig.rentCost * thisPlotDays;
 			plotDays.add(thisPlotDays + numDaysPaid);
-
-			i++;
 		}
 
 		if (Vault.getEconomy().has(player, totalCost)) {
 			Vault.getEconomy().withdrawPlayer(player, totalCost);
-			for (i = 0; i < plotDays.size(); i++)
+			for (int i = 0; i < plotDays.size(); i++)
 				SqlPlotRent.setRentDays(player, i, plotDays.get(i));
 			FileLogger.log(player.getName() + " paid rent for (up to, if it didn't go over " + RentConfig.maxDays + ") "
 					+ days + " days on all plots");

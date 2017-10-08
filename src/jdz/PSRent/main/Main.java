@@ -1,13 +1,9 @@
 
 package jdz.PSRent.main;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 
 import org.bukkit.Bukkit;
-import org.bukkit.OfflinePlayer;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -18,11 +14,8 @@ import org.bukkit.scheduler.BukkitRunnable;
 
 import com.intellectualcrafters.plot.api.PlotAPI;
 import com.intellectualcrafters.plot.object.Plot;
-import com.intellectualcrafters.plot.object.PlotId;
 import com.plotsquared.bukkit.events.PlayerClaimPlotEvent;
 import com.plotsquared.bukkit.events.PlotClearEvent;
-import com.plotsquared.bukkit.events.PlotMergeEvent;
-import com.plotsquared.bukkit.events.PlotUnlinkEvent;
 
 import jdz.BukkitJUtils.utils.BukkitJUtils;
 import jdz.BukkitJUtils.utils.Config;
@@ -38,6 +31,7 @@ public class Main extends JavaPlugin {
 
 		SqlApi.runOnConnect(() -> {
 			SqlPlotRent.ensureCorrectTables();
+			SqlPlotRent.fixData();
 			RentChecker.setLastCheck(RentChecker.getLastCheck());
 		});
 
@@ -63,17 +57,18 @@ public class Main extends JavaPlugin {
 
 			@EventHandler
 			public void onClaim(PlayerClaimPlotEvent event) {
-				System.out.println("PING");
 				SqlPlotRent.addEntry(event.getPlayer(), event.getPlot(), true);
 			}
 
 			@EventHandler
 			public void onClaimDelete(PlotClearEvent event) {
+				Set<Plot> connectedPlots = event.getPlot().getConnectedPlots();
 				new BukkitRunnable() {
 					@Override
 					public void run() {
-						if (event.getPlot().getOwners().isEmpty())
-							SqlPlotRent.removeEntry(event.getPlot());
+						for (Plot p: connectedPlots)
+							if (p.getOwners().isEmpty())
+								SqlPlotRent.removeEntry(p);
 					}
 				}.runTaskLaterAsynchronously(Main.plugin, 60L);
 			}
@@ -92,7 +87,6 @@ public class Main extends JavaPlugin {
 
 			@EventHandler(ignoreCancelled = true)
 			public void onUnlink(PlotUnlinkEvent event) {
-				System.out.println("PONG");
 				ArrayList<PlotId> plotIDs = event.getPlots();
 				List<Plot> plots = new ArrayList<Plot>();
 				for (PlotId pid : plotIDs)
@@ -105,7 +99,8 @@ public class Main extends JavaPlugin {
 					owner = Bukkit.getOfflinePlayer(first.getOwners().iterator().next());
 					for (Plot p : plots) {
 						SqlPlotRent.removeEntry(p);
-						SqlPlotRent.addEntry(owner, p, true);
+						if (p.getOwners().size() > 0)
+							SqlPlotRent.addEntry(owner, p, true);
 					}
 				}
 			}*/

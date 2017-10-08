@@ -35,6 +35,7 @@ public final class SqlMessageQueue implements Listener {
 		Bukkit.getServer().getPluginManager().registerEvents(new SqlMessageQueue(), BukkitJUtils.plugin);
 		if (MessageQueueTable == null)
 			MessageQueueTable = BukkitJUtils.plugin.getName()+"_MessageQueue";
+		ensureCorrectTables();
 	}
 	
 	public static void setTable(String table) {
