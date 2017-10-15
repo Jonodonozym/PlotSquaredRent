@@ -34,13 +34,12 @@ public final class SqlMessageQueue implements Listener {
 	public static void init(){
 		Bukkit.getServer().getPluginManager().registerEvents(new SqlMessageQueue(), BukkitJUtils.plugin);
 		if (MessageQueueTable == null)
-			MessageQueueTable = BukkitJUtils.plugin.getName()+"_MessageQueue";
-		ensureCorrectTables();
+			setTable(BukkitJUtils.plugin.getName()+"_MessageQueue");
 	}
 	
 	public static void setTable(String table) {
 		SqlMessageQueue.MessageQueueTable = table;
-		ensureCorrectTables();
+		SqlApi.runOnConnect(()->{ensureCorrectTables();});
 	}
 
 	private static void ensureCorrectTables() {
@@ -68,8 +67,9 @@ public final class SqlMessageQueue implements Listener {
 		if (!checkPreconditions())
 			return;
 
-		String update = "INSERT INTO " + MessageQueueTable + " (player, message, priority) VALUES(," + offlinePlayer.getName()
+		String update = "INSERT INTO " + MessageQueueTable + " (player, message, priority) VALUES('" + offlinePlayer.getName()
 				+ "','" + message + "'," + priority + ");";
+		System.out.println(update+" :: "+message);
 		SqlApi.executeUpdate(update);
 	}
 
@@ -83,7 +83,7 @@ public final class SqlMessageQueue implements Listener {
 		for (String s : messages){
 			if (s == "")
 				continue;
-			SqlApi.executeUpdate(update.replace("\\{m\\}", s).replace("\\{p\\}", "" + i++));
+			SqlApi.executeUpdate(update.replace("{m}", s).replace("{p}", "" + i++));
 		}
 	}
 
@@ -91,7 +91,7 @@ public final class SqlMessageQueue implements Listener {
 		if (!checkPreconditions())
 			return;
 
-		String update = "DELETE FROM " + MessageQueueTable + " WHERE player = '" + offlinePlayer.getName() + ";";
+		String update = "DELETE FROM " + MessageQueueTable + " WHERE player = '" + offlinePlayer.getName() + "';";
 		SqlApi.executeUpdate(update);
 	}
 

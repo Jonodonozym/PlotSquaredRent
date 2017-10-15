@@ -42,6 +42,8 @@ public class Main extends JavaPlugin {
 		RentConfig.reloadConfig(config);
 		Messages.reloadMessages();
 
+		WarningMessages.start();
+
 		for (Player player : Bukkit.getServer().getOnlinePlayers())
 			for (Plot p : new PlotAPI().getPlayerPlots(player))
 					SqlPlotRent.addEntry(player, p, false);

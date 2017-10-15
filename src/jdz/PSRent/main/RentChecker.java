@@ -29,7 +29,7 @@ public class RentChecker{
 	private static SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 	private static Date nextCheck = getNextCheck(new Date(), RentConfig.checkHours, RentConfig.checkMinutes);
 	static{
-			new TimedTask(6000, ()->{
+			new TimedTask(1200, ()->{
 			if (new Date().after(nextCheck)){
 				subtractRent();
 				setLastCheck(new Date());
@@ -51,7 +51,7 @@ public class RentChecker{
 			OfflinePlayer player = Bukkit.getOfflinePlayer(overdue.get(i)[0]);
 			if (player != null){
 				SqlMessageQueue.addQueuedMessage(player,
-						Messages.autoUnclaimed.replace("{w}", plot.getWorldName())
+						Messages.autoUnclaimed
 						.replace("{x}", ""+plot.getCenter().getX())
 						.replace("{z}", ""+plot.getCenter().getZ()));
 				FileLogger.log(player.getName()+"'s plot at "+x+","+y+" rent payments went overdue, so it was unclaimed.");

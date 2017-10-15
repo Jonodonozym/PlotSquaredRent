@@ -9,6 +9,7 @@ import org.bukkit.configuration.file.YamlConfiguration;
 
 import jdz.BukkitJUtils.utils.FileExporter;
 import jdz.BukkitJUtils.utils.Vault;
+import net.md_5.bungee.api.ChatColor;
 
 public class Messages {
 	public static String autoUnclaimed;
@@ -24,6 +25,7 @@ public class Messages {
 	public static String tooLong;
 	public static String plotListHeadder;
 	public static String plotListFooter;
+	public static String lowRentWarning = ChatColor.RED+"Your plot at {w}:({x},{z}) only has {d} days of rent remaining!";
 
 	public static List<String> help;
 

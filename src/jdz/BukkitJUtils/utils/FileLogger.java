@@ -80,7 +80,8 @@ public final class FileLogger {
 		for (String s : extraData)
 			pw.println('\t' + s);
 		String exceptionAsString = pw.toString();
-		createErrorLog(exceptionAsString);
+		createErrorLog(getLogsDirectory() + File.separator + "Errors" + File.separator+exception.getClass().getName()
+				+ getTimestamp() + ".txt", exceptionAsString);
 	}
 
 	/**
@@ -92,7 +93,24 @@ public final class FileLogger {
 		StringWriter sw = new StringWriter();
 		exception.printStackTrace(new PrintWriter(sw));
 		String exceptionAsString = "\n"+sw.toString();
-		createErrorLog(exceptionAsString);
+		createErrorLog(getLogsDirectory() + File.separator + "Errors" + File.separator+exception.getClass().getName()
+				+ getTimestamp() + ".txt", exceptionAsString);
+	}
+
+	/**
+	 * Writes an error message to an error log file
+	 * 
+	 * @param exception
+	 */
+	public static void createErrorLog(String fileDir, String error) {
+		BukkitJUtils.plugin.getLogger().info("An error occurred. Check the Error log file for details.");
+		
+		createDefaultDirectory(getLogsDirectory());
+		createDefaultDirectory(getLogsDirectory() + File.separator + "Errors");
+		
+		File file = new File(fileDir);
+		
+		writeFile("An error occurred in the plugin. If you can't work out the issue from this file, send this file to the plugin developer with a description of the failure",error,file);
 	}
 
 	/**
@@ -102,13 +120,12 @@ public final class FileLogger {
 	 */
 	public static void createErrorLog(String error) {
 		BukkitJUtils.plugin.getLogger().info("An error occurred. Check the Error log file for details.");
-		String fileDir = getLogsDirectory() + File.separator + "Errors" + File.separator+"Error "
-				+ getTimestamp() + ".txt";
 		
 		createDefaultDirectory(getLogsDirectory());
 		createDefaultDirectory(getLogsDirectory() + File.separator + "Errors");
 		
-		File file = new File(fileDir);
+		File file = new File(getLogsDirectory() + File.separator + "Errors" + File.separator+"Error "
+				+ getTimestamp() + ".txt");
 		
 		writeFile("An error occurred in the plugin. If you can't work out the issue from this file, send this file to the plugin developer with a description of the failure",error,file);
 	}

@@ -161,13 +161,14 @@ public class RentCommandHandler extends SubCommand {
 			return new String[] { ChatColor.RED + "Couldn't connect to the rent database D:" };
 
 		int numPlots = new PlotAPI().getPlayerPlots(player).size();
+		int[] rentDays = SqlPlotRent.getAllRentDays(player);
 		String[] list = new String[numPlots + 2];
 		list[0] = Messages.plotListHeadder;
 		int i = 0;
 		for (Plot plot : SqlPlotRent.getPlots(player)) {
 			list[i + 1] = ChatColor.GREEN + "Plot " + i + ": " + plot.getWorldName() + " (" + plot.getCenter().getX()
 					+ "," + plot.getCenter().getZ() + ") " + ChatColor.GOLD + " Days paid: "
-					+ SqlPlotRent.getRentDays(player, i);
+					+ rentDays[i];
 			i++;
 		}
 		list[list.length - 1] = Messages.plotListFooter;

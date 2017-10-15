@@ -96,17 +96,32 @@ public class SqlPlotRent {
 	}
 
 	public static int getRentDays(OfflinePlayer offlinePlayer, int plotNumber) {
-		if (!SqlApi.isConnected())
-			return RentConfig.maxDays;
 		String query = "SELECT daysPaid FROM " + table + " WHERE player = '" + offlinePlayer.getName()
 				+ "' AND plotNumber = " + plotNumber + ";";
 		List<String[]> result = SqlApi.getRows(query);
+		
 		try {
 			return Integer.parseInt(result.get(0)[0]);
 		} catch (Exception e) {
 			FileLogger.createErrorLog(e);
 			return RentConfig.maxDays;
 		}
+	}
+	
+	public static int[] getAllRentDays(OfflinePlayer offlinePlayer){
+		String query = "SELECT daysPaid FROM " + table + " WHERE player = '" + offlinePlayer.getName()+"' ORDER BY plotNumber asc;";
+		List<String[]> result = SqlApi.getRows(query);
+		int[] returnArray = new int[result.size()];
+		for (int i=0; i<result.size(); i++){
+			try {
+				returnArray[i] = Integer.parseInt(result.get(i)[0]);
+			} catch (Exception e) {
+				e.printStackTrace();
+				FileLogger.createErrorLog(e);
+				returnArray[i] = RentConfig.maxDays;
+			}
+		}
+		return returnArray;
 	}
 
 	public static void decreaseRentDays() {
@@ -133,7 +148,18 @@ public class SqlPlotRent {
 	}
 
 	public static List<String[]> getOverdueRents() {
-		String query = "SELECT player, world, x, y FROM "+table+" WHERE daysPaid <= 0";
+		return getDaysLessOrEqualThan(0);
+	}
+
+	public static List<String[]> getDaysLessOrEqualThan(int days) {
+		String query = "SELECT player, world, x, y, daysPaid FROM "+table+" WHERE daysPaid <= "+days+";";
+		List<String[]> list = SqlApi.getRows(query);
+		
+		return list;
+	}
+
+	public static List<String[]> getDaysBetweenInclusive(int min, int max) {
+		String query = "SELECT player, world, x, y, daysPaid FROM "+table+" WHERE daysPaid <= "+max+" AND daysPaid >= "+min+";";
 		List<String[]> list = SqlApi.getRows(query);
 		
 		return list;

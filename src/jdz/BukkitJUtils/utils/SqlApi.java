@@ -41,7 +41,10 @@ public final class SqlApi {
 	private static List<Runnable> connectHooks = new ArrayList<Runnable>();
 	
 	public static void runOnConnect(Runnable r){
-		connectHooks.add(r);
+		if (isConnected())
+			r.run();
+		else
+			connectHooks.add(r);
 	}
 	
 	public static boolean reloadConfig(FileConfiguration config){
